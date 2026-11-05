@@ -1,0 +1,11 @@
+[project]
+name = "local-llm-conversation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.5.9",
+    "langchain>=1.4.9",
+    "pydantic>=2.14.2",
+]
