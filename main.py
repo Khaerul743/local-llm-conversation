@@ -1,6 +1,3 @@
-def main():
-    print("Hello from local-llm-conversation!")
+from src.config.settings import settings
 
-
-if __name__ == "__main__":
-    main()
+print(settings)
