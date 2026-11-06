@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 
 class LLMClient:
     def __init__(self):
-        self.llm_mode = settings.LLM_MODE
+        self.llm_provider = settings.LLM_PROVIDER
         self.llm_model = settings.LLM_MODEL
         self._client = ollama.Client(host=settings.OLLAMA_HOST)
 
