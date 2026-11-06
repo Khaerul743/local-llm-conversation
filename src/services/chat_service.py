@@ -15,12 +15,12 @@ class ChatService:
             "and concisely."
         )
 
-        self.conversations = dict[str, list[BaseMessage]] = {}
+        self.conversations: dict[str, list[BaseMessage]] = {}
 
     def create_conversation(self) -> str:
         conversation_id: str = str(uuid4())
 
-        self.conversations[self.conversation_id] = [
+        self.conversations[conversation_id] = [
             SystemMessage(content=self._system_prompt)
         ]
 
@@ -62,7 +62,7 @@ class ChatService:
 
         response_chunks = []
 
-        for chunk in self.llm.stream(history):
+        for chunk in self._llm.stream(history):
             content = chunk.content
 
             if isinstance(content, str) and content:
@@ -85,5 +85,5 @@ class ChatService:
             raise ValueError("Conversation not found.")
 
         self.conversations[conversation_id] = [
-            SystemMessage(content=self.system_prompt)
+            SystemMessage(content=self._system_prompt)
         ]
