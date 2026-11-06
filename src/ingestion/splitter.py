@@ -1,5 +1,7 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from src.config.settings import settings
+
 
 class DocumentSplitter:
     def __init__(self):
@@ -16,10 +18,7 @@ class DocumentSplitter:
             add_start_index=True,
         )
 
-
     def split(self, documents):
-        chunks = self.splitter.split_documents(
-            documents
-        )
+        chunks = self.splitter.split_documents(documents)
 
         return chunks
