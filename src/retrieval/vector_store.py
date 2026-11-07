@@ -20,4 +20,5 @@ class VectorStore:
         self.vector_store.add_documents(documents=documents)
 
     def similarity_search(self, query: str, k: int = 4):
-        return self.vector_store.similarity_search(query=query, k=k)
+        result = self.vector_store.similarity_search(query=query, k=k)
+        return result

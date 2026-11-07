@@ -1,6 +1,7 @@
 .env
 data/
-data
+documents/
+*.pdf
 # Byte-compiled / optimized / DLL files
 __pycache__eks/
 *.py[cod]

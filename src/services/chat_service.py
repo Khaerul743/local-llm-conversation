@@ -1,54 +1,37 @@
 from collections.abc import Iterator
 from uuid import uuid4
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage
 
-from src.llm import LLMClient
+from src.llm.agent import Agent
 
 
 class ChatService:
     def __init__(self):
-        self._llm_client = LLMClient()
-        self._llm = self._llm_client.get_llm()
-        self._system_prompt = (
-            "You are a helpful AI assistant. "
-            "Answer questions clearly, accurately, "
-            "and concisely."
-        )
+        self._agent = Agent()
 
-        self.conversations: dict[str, list[BaseMessage]] = {}
+    def _get_config(self, conversation_id: str) -> dict:
+        return {
+            "configurable": {
+                "thread_id": conversation_id,
+            }
+        }
 
     def create_conversation(self) -> str:
-        conversation_id: str = str(uuid4())
+        return str(uuid4())
 
-        self.conversations[conversation_id] = [
-            SystemMessage(content=self._system_prompt)
-        ]
+    def send_message(
+        self,
+        conversation_id: str,
+        message: str,
+    ) -> str:
 
-        return conversation_id
+        response = self._agent.get_agent().invoke(
+            {"messages": [HumanMessage(content=message)]},
+            config=self._get_config(conversation_id),
+        )
 
-    def get_history(self, conversation_id: str) -> list[BaseMessage]:
-        if conversation_id not in self.conversations:
-            raise ValueError("Conversation not found")
-        return self.conversations[conversation_id]
-
-    def _update_history(
-        self, conversation_id: str, new_conversation_history: list[BaseMessage]
-    ) -> None:
-        if conversation_id not in self.conversations:
-            raise ValueError("Conversation not found")
-        self.conversations[conversation_id] = new_conversation_history
-
-    def send_message(self, conversation_id: str, message: str) -> str:
-        history = self.get_history(conversation_id)
-        history.append(HumanMessage(content=message))
-
-        response = self._llm.invoke(history)
-        history.append(response)
-
-        self._update_history(conversation_id, history)
-
-        return response.content
+        return response["messages"][-1].content
 
     def stream_message(
         self,
@@ -56,32 +39,44 @@ class ChatService:
         message: str,
     ) -> Iterator[str]:
 
-        history = self.get_history(conversation_id)
+        agent = self._agent.get_agent()
 
-        history.append(HumanMessage(content=message))
+        for chunk, metadata in agent.stream(
+            {"messages": [HumanMessage(content=message)]},
+            config=self._get_config(conversation_id),
+            stream_mode="messages",
+        ):
+            # Hanya mengambil output dari model node
+            if metadata.get("langgraph_node") != "model":
+                continue
 
-        response_chunks = []
-
-        for chunk in self._llm.stream(history):
             content = chunk.content
 
             if isinstance(content, str) and content:
-                response_chunks.append(content)
                 yield content
 
-        # Save complete AI response after streaming
-        full_response = "".join(response_chunks)
+    def get_history(
+        self,
+        conversation_id: str,
+    ) -> list:
 
-        history.append(AIMessage(content=full_response))
+        state = self._agent.get_agent().get_state(
+            config=self._get_config(conversation_id)
+        )
+
+        if not state.values:
+            return []
+
+        return state.values.get("messages", [])
 
     def clear_conversation(
         self,
         conversation_id: str,
     ) -> None:
 
-        if conversation_id not in self.conversations:
-            raise ValueError("Conversation not found.")
+        agent = self._agent.get_agent()
 
-        self.conversations[conversation_id] = [
-            SystemMessage(content=self._system_prompt)
-        ]
+        agent.update_state(
+            config=self._get_config(conversation_id),
+            values={"messages": []},
+        )
