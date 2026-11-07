@@ -1,7 +1,11 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
 
 from src.services.chat_service import ChatService
+from src.services.ingestion_service import IngestionService
 
 st.set_page_config(
     page_title="Ruang Bicara",
@@ -59,7 +63,50 @@ with st.sidebar:
     if st.button("Percakapan baru", icon=":material/add:", use_container_width=True):
         st.session_state.conversation_id = chat_service.create_conversation()
         st.rerun()
-    st.caption("Riwayat percakapan tersimpan selama sesi ini.")
+    st.divider()
+    st.markdown("### :material/folder_open: Dokumen")
+    uploaded_file = st.file_uploader(
+        "Unggah dokumen", type=["pdf", "txt"], key="document_upload"
+    )
+    if uploaded_file and st.button(
+        "Simpan ke knowledge base",
+        icon=":material/upload_file:",
+        use_container_width=True,
+    ):
+        if "ingestion_service" not in st.session_state:
+            st.session_state.ingestion_service = IngestionService()
+        try:
+            with TemporaryDirectory() as temp_dir:
+                safe_filename = Path(uploaded_file.name).name
+                file_path = Path(temp_dir) / safe_filename
+                file_path.write_bytes(uploaded_file.getvalue())
+                result = st.session_state.ingestion_service.ingest(str(file_path))
+            st.success(
+                f"{safe_filename} tersimpan ({result['total_chunks']} potongan)."
+            )
+        except Exception as error:
+            st.error(f"Dokumen tidak dapat diproses: {error}")
+
+    try:
+        if "ingestion_service" not in st.session_state:
+            st.session_state.ingestion_service = IngestionService()
+        stored_documents = (
+            st.session_state.ingestion_service.vector_store.list_documents()
+        )
+        if stored_documents:
+            st.dataframe(
+                stored_documents,
+                column_config={
+                    "filename": "Nama dokumen",
+                    "chunks": st.column_config.NumberColumn("Potongan", format="%d"),
+                },
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption("Belum ada dokumen di vector store.")
+    except Exception as error:
+        st.caption(f"Daftar dokumen belum tersedia: {error}")
 
 st.markdown('<p class="eyebrow">Asisten AI</p>', unsafe_allow_html=True)
 st.title("Apa yang ingin kamu bahas?")

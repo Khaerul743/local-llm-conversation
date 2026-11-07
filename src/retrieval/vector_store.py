@@ -22,3 +22,17 @@ class VectorStore:
     def similarity_search(self, query: str, k: int = 4):
         result = self.vector_store.similarity_search(query=query, k=k)
         return result
+
+    def list_documents(self):
+        stored = self.vector_store.get(include=["metadatas"])
+        documents = {}
+
+        for metadata in stored["metadatas"] or []:
+            source = metadata.get("source", "Dokumen tanpa sumber")
+            filename = source.replace("\\", "/").rsplit("/", 1)[-1]
+            documents[source] = documents.get(
+                source, {"filename": filename, "chunks": 0}
+            )
+            documents[source]["chunks"] += 1
+
+        return list(documents.values())

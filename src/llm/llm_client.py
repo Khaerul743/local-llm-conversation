@@ -30,6 +30,13 @@ class LLMClient:
             )
             return llm
 
+        if not settings.OPENAI_API_KEY:
+            raise ValueError(
+                "OPENAI_API_KEY is required when LLM_PROVIDER is set to 'openai'."
+            )
+
         return ChatOpenAI(
-            model=settings.LLM_MODEL, temperature=settings.LLM_TEMPERATURE
+            model=settings.LLM_MODEL,
+            temperature=settings.LLM_TEMPERATURE,
+            api_key=settings.OPENAI_API_KEY,
         )

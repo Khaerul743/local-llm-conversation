@@ -13,7 +13,7 @@ class DocumentLoader:
         if extention == ".pdf":
             loader = PyPDFLoader(str(path), mode="page")
 
-        elif extention == "txt":
+        elif extention == ".txt":
             loader = TextLoader(str(path), encoding="utf-8")
 
         else:
